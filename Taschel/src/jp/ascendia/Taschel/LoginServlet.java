@@ -23,60 +23,8 @@ import javax.sql.DataSource;
  * @author 斉藤 祐輔
  *
  */
-public class LoginServlet extends HttpServlet {
+public class LoginServlet extends BaseServlet {
 	
-	// メンバ変数
-	private Connection conn = null;
-	private Boolean isDbAvailable = true;
-
-	@Override
-	public void init() {
-		System.out.println("[START] init");
-		try {
-			// InitialContextは、SQL検索をするときの出発点
-			InitialContext context = new InitialContext();
-			// DataSource型のインスタンスを取得
-			DataSource dataSource = (DataSource) context.lookup("java:comp/env/jdbc/mysql");
-			// DataSource型のインスタンスからConnectionを取得
-			conn = dataSource.getConnection();
-		} catch (NamingException e) {
-			isDbAvailable = false;
-			e.printStackTrace();
-		} catch (SQLException e) {
-			isDbAvailable = false;
-			e.printStackTrace();
-		} finally {
-			System.out.println("[ END ] init");
-		}
-	}
-	
-	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		System.out.println("[START] doGet");
-		this.execute(request, response);
-		System.out.println("[ END ] doGet");
-	}	
-
-	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		System.out.println("[START] doPost");
-		this.execute(request, response);
-		System.out.println("[ END ] doPost");
-	}
-
-	/**
-	 * エラーがある場合の処理
-	 * 
-	 * @param request
-	 * @param response
-	 * @throws ServletException
-	 * @throws IOException
-	 */
-	private void goBackLogin(HttpServletRequest request, HttpServletResponse response, String errText) throws ServletException, IOException {
-		request.setAttribute("ERROR", errText);
-		this.getServletContext().getRequestDispatcher("/ｌogin.jsp").forward(request, response);
-	}
-
 	/**
 	 * 
 	 * @param request
@@ -95,7 +43,7 @@ public class LoginServlet extends HttpServlet {
 
 		// ログイン認証
 		// SQLインジェクションの可能性がある箇所はPreparedStatementクラスを使います
-		try (PreparedStatement pstmt = conn.prepareStatement(sb.toString())){
+		try (PreparedStatement pstmt = this.getConection().prepareStatement(sb.toString())){
 			pstmt.setString(1, loginID);
 			pstmt.setString(2, password);
 			
@@ -121,7 +69,7 @@ public class LoginServlet extends HttpServlet {
 					String sql = String.format("SELECT g.name FROM m_group g, k_syozoku s WHERE g.id = s.group_id AND s.user_id = %d;", user_id);
 					
 					// SQLインジェクションの可能性がないので、通常のStatementクラスを使います
-					try (	Statement stmt = conn.createStatement(); 
+					try (	Statement stmt = this.getConection().createStatement(); 
 							ResultSet rs2 = stmt.executeQuery(sql)) {
 						
 						String group_name = null;
@@ -136,36 +84,29 @@ public class LoginServlet extends HttpServlet {
 						session.setAttribute("LAST_NAME", last_name);
 						session.setAttribute("GROUP_NAME", group_name);						
 						// 次の処理へ
-						this.getServletContext().getRequestDispatcher("/dummy.jsp").forward(request, response);
-						// TODO: 遷移先を修正する
-						//this.getServletContext().getRequestDispatcher("/taskList").forward(request, response);
+						//this.getServletContext().getRequestDispatcher("/dummy.jsp").forward(request, response);
+						// _TODO: 遷移先を修正する
+						this.getServletContext().getRequestDispatcher("/TaskList").forward(request, response);
 					}
 				}
 			}			
 		} catch (SQLException e) {
 			this.goBackLogin(request, response, ErrorMessage.SYSTEM_ERROR);
-			// TODO 自動生成された catch ブロック
 			e.printStackTrace();
 		}
 	}
 	
 	/**
-	 * login.jspからきた場合は通常処理し、直接URLを叩いてアクセスしてきた場合はlogin.jspへ戻すようにします
+	 * login.jspからきた場合は通常処理し、直接URLを叩いてアクセスしてきた場合はlogin.jspへ戻すようにします。
 	 * 
 	 * @param request
 	 * @param response
 	 * @throws ServletException
 	 * @throws IOException
 	 */
-	private void execute(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-		System.out.println("[START] execute");
-		
-		/* 事前処理 */
-		// データベース接続エラーなどがある場合、即座にlogin.jspへ戻す
-		if ( !isDbAvailable ){
-			this.goBackLogin(request, response, ErrorMessage.SYSTEM_ERROR);
-			return;
-		}
+	@Override
+	protected void execute(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		System.out.println("[LoginServlet][START] execute");
 
 		// login.jspから送られてきたデータを取得
 		String loginID = request.getParameter("loginID");
@@ -176,10 +117,11 @@ public class LoginServlet extends HttpServlet {
 		if( loginID == null || password == null ){
 			/* エラー処理 */
 			this.goBackLogin(request, response, ErrorMessage.LOGIN_ERROR);
-			
+			System.out.println("[LoginServlet][ END ] execute2");
 		} else {
 			/* 正常処理 */
 			this.doLogin(request, response, loginID, password);
+			System.out.println("[LoginServlet][ END ] execute3");
 		}		
 	}
 
