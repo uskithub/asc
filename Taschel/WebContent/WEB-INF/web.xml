@@ -38,6 +38,16 @@
 	</servlet-mapping>
 	
     <!-- タスク新規作成画面 -->
+    <servlet>
+        <servlet-name>PrepareCreateTaskServlet</servlet-name>
+        <servlet-class>jp.ascendia.Taschel.PrepareCreateTaskServlet</servlet-class>
+    </servlet>
+    
+    <servlet-mapping>
+        <servlet-name>PrepareCreateTaskServlet</servlet-name>
+        <url-pattern>PrepareCreateTask</url-pattern>
+    </servlet-mapping>
+    
 	<servlet>
 		<servlet-name>CreateTaskServlet</servlet-name>
 		<servlet-class>jp.ascendia.Taschel.CreateTaskServlet</servlet-class>

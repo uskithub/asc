@@ -17,74 +17,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-public class TaskListServlet extends BaseServlet {
-	
-	StringBuilder userTaskSql = new StringBuilder("SELECT t.*, ki.name as ki_name, kstt.name as kstt_name, kstr.name as kstr_name, ke.name as ke_name, u.last_name, u.first_name")
-		.append(" FROM t_task t, m_kbn ki, m_kbn kstt, m_kbn kstr, m_kbn ke, m_user u")
-		.append(" WHERE t.imp_kbn = ki.kbn_value AND ki.id = 1")
-		.append(" AND t.stat_kbn = kstt.kbn_value AND kstt.id = 2")
-		.append(" AND t.start_kbn = kstr.kbn_value AND kstr.id = 3")
-		.append(" AND t.end_kbn = ke.kbn_value AND ke.id = 4")
-		.append(" AND t.orgnizer_id = u.id")
-		.append(" AND t.user_id = ?");
-	
-	StringBuilder orgnizeTaskSql = new StringBuilder("SELECT t.*, ki.name as ki_name, kstt.name as kstt_name, kstr.name as kstr_name, ke.name as ke_name, u.last_name, u.first_name")
-		.append(" FROM t_task t, m_kbn ki, m_kbn kstt, m_kbn kstr, m_kbn ke, m_user u")
-		.append(" WHERE t.imp_kbn = ki.kbn_value AND ki.id = 1")
-		.append(" AND t.stat_kbn = kstt.kbn_value AND kstt.id = 2")
-		.append(" AND t.start_kbn = kstr.kbn_value AND kstr.id = 3")
-		.append(" AND t.end_kbn = ke.kbn_value AND ke.id = 4")
-		.append(" AND t.orgnizer_id = u.id")
-		.append(" AND t.orgnizer_id != t.user_id")		
-		.append(" AND t.orgnizer_id = ?");
-	
-	/**
-	 * ResultSetクラスを受け取り、一レコードを一つのMapに変換し、Listに詰めて返します。
-	 * 
-	 * @param rs
-	 * @return
-	 * @throws SQLException
-	 */
-	private List<Map<String, Object>> convertResultSet2List(ResultSet rs) throws SQLException{		
-		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
-
-		ResultSetMetaData rsmd = rs.getMetaData();
-
-		while (rs.next()) {
-			Map<String, Object> m = new HashMap<String, Object>();
-			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
-				m.put(rsmd.getColumnLabel(i), rs.getObject(i));
-				
-				// 参考
-				/*switch(rsmd.getColumnType(i)) {
-					case java.sql.Types.BIGINT:
-						System.out.println(String.format("%s　は Long型です。", rsmd.getColumnLabel(i)));
-						break;
-					case java.sql.Types.INTEGER:
-						System.out.println(String.format("%s　は Integer型です。", rsmd.getColumnLabel(i)));
-						break;
-					case java.sql.Types.VARCHAR:
-					case java.sql.Types.LONGVARCHAR:
-						System.out.println(String.format("%s　は String型です。", rsmd.getColumnLabel(i)));
-						break;
-					case java.sql.Types.BOOLEAN:
-						System.out.println(String.format("%s　は Boolean型です。", rsmd.getColumnLabel(i)));
-						break;
-					case java.sql.Types.DATE:
-					case java.sql.Types.TIMESTAMP:
-						System.out.println(String.format("%s　は Date型です。", rsmd.getColumnLabel(i)));
-						break;
-					case java.sql.Types.NULL:						
-						System.out.println(String.format("%s　は nullです。", rsmd.getColumnLabel(i)));
-						break;
-					default:
-						throw new UnsupportedOperationException(String.format("%s　は実装されていません（型: %d）", rsmd.getColumnLabel(i), rsmd.getColumnType(i)));
-				}*/
-			}
-			list.add(m);
-		}
-		return list;
-	}	
+public class TaskListServlet extends BaseTaskServlet {
 	
 	/**
 	 * 指定したユーザIDでタスク一覧と依頼しているタスク一覧を取得します。
@@ -101,31 +34,19 @@ public class TaskListServlet extends BaseServlet {
 		System.out.println(String.format("[TaskListServlet][START] doGetTaskList(user_id: %d)", user_id));
 		HttpSession session = request.getSession();
 
-		if ( session.getAttribute("USER_LIST") == null ) {
+		if ( session.getAttribute(USER_LIST) == null ) {
 			// ユーザ一覧
 			try (	Statement stmt = this.getConection().createStatement(); 
 					ResultSet rs = stmt.executeQuery("SELECT id, first_name, last_name FROM m_user ORDER BY id;")) {
-				session.setAttribute("USER_LIST", this.convertResultSet2List(rs));
+				session.setAttribute(USER_LIST, this.convertResultSet2List(rs));
 			}
 		}
 		
 		// ログインユーザのタスク一覧
-		try (PreparedStatement pstmt = this.getConection().prepareStatement(userTaskSql.toString())){
-			pstmt.setInt(1, user_id);
-			System.out.println(pstmt.toString());
-			try (ResultSet rs = pstmt.executeQuery()){				
-				session.setAttribute("USER_TASK_LIST", this.convertResultSet2List(rs));
-			}				
-		}
-		
-		// ログインユーザが依頼しているタスク一覧
-		try (PreparedStatement pstmt = this.getConection().prepareStatement(orgnizeTaskSql.toString())){
-			pstmt.setInt(1, user_id);
-			System.out.println(pstmt.toString());
-			try (ResultSet rs = pstmt.executeQuery()){				
-				session.setAttribute("ORGNIZE_TASK_LIST", this.convertResultSet2List(rs));
-			}				
-		}
+		session.setAttribute(USER_TASK_LIST, this.getUserTaskList(user_id));
+				
+		// ログインユーザが依頼しているタスク一覧		
+		session.setAttribute(ORGNIZE_TASK_LIST, this.getOrgnizeTaskList(user_id));		
 	}
 	
 	/**
@@ -155,7 +76,7 @@ public class TaskListServlet extends BaseServlet {
 			pstmt.setString(2, "%" + safeKeyword + "%");
 			System.out.println(pstmt.toString());
 			try (ResultSet rs = pstmt.executeQuery()){				
-				session.setAttribute("USER_TASK_LIST", this.convertResultSet2List(rs));
+				session.setAttribute(USER_TASK_LIST, this.convertResultSet2List(rs));
 			}				
 		}
 		
@@ -165,7 +86,7 @@ public class TaskListServlet extends BaseServlet {
 			pstmt.setString(2, "%" + safeKeyword + "%");
 			System.out.println(pstmt.toString());
 			try (ResultSet rs = pstmt.executeQuery()){				
-				session.setAttribute("ORGNIZE_TASK_LIST", this.convertResultSet2List(rs));
+				session.setAttribute(ORGNIZE_TASK_LIST, this.convertResultSet2List(rs));
 			}				
 		}
 	}
@@ -189,28 +110,31 @@ public class TaskListServlet extends BaseServlet {
 		
 		System.out.println("[TaskListServlet][START] execute");
 		
-		HttpSession session = request.getSession(false);
-		Integer user_id = (Integer)session.getAttribute("USER_ID");
+		// 2013-12-13 saito getSession(false)では、結果がnullのとき、session.getAttributeで
+		// NullPointerExceptionとなるので、getSession(true)に変更。これに伴い、下のif文も
+		// session == null から　session.isNew() に変更
+		HttpSession session = request.getSession(true);
+		Integer user_id = (Integer)session.getAttribute(USER_ID);
 		
-		if ( session == null || user_id == null) {
+		if ( session.isNew() || user_id == null) {
 			/* エラー処理 */
-			this.goBackLogin(request, response, ErrorMessage.LOGIN_ERROR);
+			this.goBackLogin(request, response, LOGIN_ERROR);
 		} else {
 			
-			boolean isChangeUser = "決定".equals(request.getParameter("changeUser"));
-			boolean isKeywordSearch = "検索".equals(request.getParameter("keywordSearch"));
+			boolean isChangeUser = "決定".equals(request.getParameter(CHANGE_USER));
+			boolean isKeywordSearch = "検索".equals(request.getParameter(KEYWORD_SEARCH));
 			
 			try {
 				if ( isChangeUser ) {
 					/* 表示ユーザの切り替え */
 					System.out.println("[TaskServlet] 表示ユーザの切り替え");
-					int target_user_id = Integer.parseInt(request.getParameter("targetUserId"));
+					int target_user_id = Integer.parseInt(request.getParameter(TARGET_USER_ID));
 					this.doGetTaskList(request, response, target_user_id);
-				} else if ( isKeywordSearch && request.getParameter("keyword") != null && !"".equals(request.getParameter("keyword")) ) {
+				} else if ( isKeywordSearch && request.getParameter(KEYWORD) != null && !"".equals(request.getParameter(KEYWORD)) ) {
 					/* 絞込み検索 */
 					System.out.println("[TaskServlet] 絞込み検索");
-					int target_user_id = Integer.parseInt(request.getParameter("targetUserId"));
-					String keyword = request.getParameter("keyword");
+					int target_user_id = Integer.parseInt(request.getParameter(TARGET_USER_ID));
+					String keyword = request.getParameter(KEYWORD);
 					this.doKeywordSearch(request, response, target_user_id, keyword);
 				} else {
 					/* ログイン後の通常処理 */
@@ -220,7 +144,7 @@ public class TaskListServlet extends BaseServlet {
 				this.getServletContext().getRequestDispatcher("/taskList.jsp").forward(request, response);
 				
 			} catch (SQLException e) {
-				this.goBackLogin(request, response, ErrorMessage.SYSTEM_ERROR);
+				this.goBackLogin(request, response, SYSTEM_ERROR);
 				e.printStackTrace();
 			}			
 		}

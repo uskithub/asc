@@ -1,9 +1,10 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
-<%@ page import="java.util.List"%>
+<%@ page import="jp.ascendia.Taschel.TaschelConstant" %>
+
 <%
 	//メッセージ表示処理
-	String errText = (String) request.getAttribute("ERROR");
+	String errText = (String) request.getAttribute(TaschelConstant.ERROR);
 	if (errText == null) {
 		errText = "ログインIDとパスワードを入力し、【ログイン】ボタンを押して下さい。";
 	}
@@ -19,8 +20,8 @@
 		<h1>タスク管理システム</h1>
 		<form action="Login" method="post">
 			<%
-				String loginID = (String) request.getAttribute("loginID");
-				String password = (String) request.getAttribute("password");
+				String loginID = (String) request.getAttribute(TaschelConstant.LOGIN_ID);
+				String password = (String) request.getAttribute(TaschelConstant.PASSWORD);
 	
 				if (loginID == null) {
 					loginID = "";
@@ -29,8 +30,8 @@
 					password = "";
 				}
 			%>
-			ログインID: <input type="text" name="loginID" maxlength="30" size="40" value="miura.emi" /><br /> 
-			パスワード: <input type="password" name="password" maxlength="30" size="40" value="asc7038" /><br />
+			ログインID: <input type="text" name="<%=TaschelConstant.LOGIN_ID %>" maxlength="30" size="40" value="miura.emi" /><br /> 
+			パスワード: <input type="password" name="<%=TaschelConstant.PASSWORD %>" maxlength="30" size="40" value="asc7038" /><br />
 			<br />
 			<input type="submit" value="ログイン" /> <input type="reset" value="入力クリア" />
 		</form>

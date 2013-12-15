@@ -63,7 +63,7 @@ public class LoginServlet extends BaseServlet {
 				last_name = rs.getString(4);
 				
 				if ( count == 0) {
-					this.goBackLogin(request, response, ErrorMessage.LOGIN_ERROR);
+					this.goBackLogin(request, response, LOGIN_ERROR);
 					
 				} else {					
 					String sql = String.format("SELECT g.name FROM m_group g, k_syozoku s WHERE g.id = s.group_id AND s.user_id = %d;", user_id);
@@ -79,10 +79,10 @@ public class LoginServlet extends BaseServlet {
 						}
 						
 						HttpSession session = request.getSession(true);
-						session.setAttribute("USER_ID", user_id);						
-						session.setAttribute("FIRST_NAME", first_name);
-						session.setAttribute("LAST_NAME", last_name);
-						session.setAttribute("GROUP_NAME", group_name);						
+						session.setAttribute(USER_ID, user_id);						
+						session.setAttribute(FIRST_NAME, first_name);
+						session.setAttribute(LAST_NAME, last_name);
+						session.setAttribute(GROUP_NAME, group_name);						
 						// 次の処理へ
 						//this.getServletContext().getRequestDispatcher("/dummy.jsp").forward(request, response);
 						// _TODO: 遷移先を修正する
@@ -91,7 +91,7 @@ public class LoginServlet extends BaseServlet {
 				}
 			}			
 		} catch (SQLException e) {
-			this.goBackLogin(request, response, ErrorMessage.SYSTEM_ERROR);
+			this.goBackLogin(request, response, SYSTEM_ERROR);
 			e.printStackTrace();
 		}
 	}
@@ -116,7 +116,7 @@ public class LoginServlet extends BaseServlet {
 		// （login.jspで未入力で送信した場合は、loginIDとpasswordは""になる）
 		if( loginID == null || password == null ){
 			/* エラー処理 */
-			this.goBackLogin(request, response, ErrorMessage.LOGIN_ERROR);
+			this.goBackLogin(request, response, LOGIN_ERROR);
 			System.out.println("[LoginServlet][ END ] execute2");
 		} else {
 			/* 正常処理 */
@@ -124,6 +124,4 @@ public class LoginServlet extends BaseServlet {
 			System.out.println("[LoginServlet][ END ] execute3");
 		}		
 	}
-
-
 }

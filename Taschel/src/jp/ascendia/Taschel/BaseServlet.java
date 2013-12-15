@@ -2,7 +2,13 @@ package jp.ascendia.Taschel;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -12,7 +18,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-public abstract class BaseServlet extends HttpServlet {
+public abstract class BaseServlet extends HttpServlet implements TaschelConstant, ErrorMessage {
 
 	// メンバ変数
 	private Connection _conn = null;
@@ -67,8 +73,56 @@ public abstract class BaseServlet extends HttpServlet {
 	 * @throws IOException
 	 */
 	protected void goBackLogin(HttpServletRequest request, HttpServletResponse response, String errText) throws ServletException, IOException {
-		request.setAttribute("ERROR", errText);
+		request.setAttribute(ERROR, errText);
 		this.getServletContext().getRequestDispatcher("/login.jsp").forward(request, response);
+	}
+	
+	/**
+	 * ResultSetクラスを受け取り、一レコードを一つのMapに変換し、Listに詰めて返します。
+	 * 
+	 * @param rs
+	 * @return
+	 * @throws SQLException
+	 */
+	protected List<Map<String, Object>> convertResultSet2List(ResultSet rs) throws SQLException{		
+		List<Map<String, Object>> list = new ArrayList<Map<String, Object>>();
+
+		ResultSetMetaData rsmd = rs.getMetaData();
+
+		while (rs.next()) {
+			Map<String, Object> m = new HashMap<String, Object>();
+			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+				m.put(rsmd.getColumnLabel(i), rs.getObject(i));
+				
+				// 参考
+				/*switch(rsmd.getColumnType(i)) {
+					case java.sql.Types.BIGINT:
+						System.out.println(String.format("%s　は Long型です。", rsmd.getColumnLabel(i)));
+						break;
+					case java.sql.Types.INTEGER:
+						System.out.println(String.format("%s　は Integer型です。", rsmd.getColumnLabel(i)));
+						break;
+					case java.sql.Types.VARCHAR:
+					case java.sql.Types.LONGVARCHAR:
+						System.out.println(String.format("%s　は String型です。", rsmd.getColumnLabel(i)));
+						break;
+					case java.sql.Types.BOOLEAN:
+						System.out.println(String.format("%s　は Boolean型です。", rsmd.getColumnLabel(i)));
+						break;
+					case java.sql.Types.DATE:
+					case java.sql.Types.TIMESTAMP:
+						System.out.println(String.format("%s　は Date型です。", rsmd.getColumnLabel(i)));
+						break;
+					case java.sql.Types.NULL:						
+						System.out.println(String.format("%s　は nullです。", rsmd.getColumnLabel(i)));
+						break;
+					default:
+						throw new UnsupportedOperationException(String.format("%s　は実装されていません（型: %d）", rsmd.getColumnLabel(i), rsmd.getColumnType(i)));
+				}*/
+			}
+			list.add(m);
+		}
+		return list;
 	}
 	
 	@Override
@@ -78,8 +132,16 @@ public abstract class BaseServlet extends HttpServlet {
 		/* 事前処理 */
 		// データベース接続エラーなどがある場合、即座にlogin.jspへ戻す
 		if ( !this.isDbAvailable() ){
-			this.goBackLogin(request, response, ErrorMessage.SYSTEM_ERROR);
+			this.goBackLogin(request, response, SYSTEM_ERROR);
 		} else {
+			
+			Map<String, String[]> m = request.getParameterMap();
+			for( String key: m.keySet() ) {
+				for( String v : m.get(key)) {
+					System.out.println(String.format("[%s](GET) %s=%s", this.getClass().getName(), key, v));
+				}
+			}
+			
 			this.execute(request, response);
 		}
 		System.out.println("[ END ] doGet");
@@ -91,8 +153,16 @@ public abstract class BaseServlet extends HttpServlet {
 		/* 事前処理 */
 		// データベース接続エラーなどがある場合、即座にlogin.jspへ戻す
 		if ( !this.isDbAvailable() ){
-			this.goBackLogin(request, response, ErrorMessage.SYSTEM_ERROR);
+			this.goBackLogin(request, response, SYSTEM_ERROR);
 		} else {
+			
+			Map<String, String[]> m = request.getParameterMap();
+			for( String key: m.keySet() ) {
+				for( String v : m.get(key)) {
+					System.out.println(String.format("[%s](POST) %s=%s", this.getClass().getName(), key, v));
+				}
+			}
+			
 			this.execute(request, response);
 		}
 		System.out.println("[ END ] doPost");

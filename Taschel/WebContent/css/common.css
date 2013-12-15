@@ -1,0 +1,19 @@
+
+table { width: 100%;border-collapse: collapse; }
+th { padding:5px;text-align: center;vertical-align:middle;border: 1px solid #000; }
+td { padding:5px;border: 1px solid #000; }
+
+div.control_left { float:left; }            
+div.control_right { float:right; }
+
+hr.clear { clear:both;margin:10px 0; }
+
+span.warn { color:#ff0000;font-weight:bold; }
+
+div.grid { width:100%; }
+div.row { width:100%;clear:both; }
+div.row > div { float:left; }
+div.columnHeader { width:120px;overflow:hidden;text-align:center; }
+div.columnData { width:320px;overflow:hidden;text-align:left; }
+
+label.required:before { content:"*";color:#ff0000; }
