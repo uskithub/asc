@@ -74,7 +74,7 @@ public class LoginServletMock {
 	
 
 	
-	//@Test
+	@Test
 	public void セッション情報確認() throws Exception {
 		System.out.println("■■■　セッション情報確認　==================================================");
 		
@@ -102,7 +102,7 @@ public class LoginServletMock {
 		servlet.doPost(request, response);		
 	}
 	
-	//@Test
+	@Test
 	public void セッション情報破棄() throws Exception {
 		System.out.println("■■■　セッションセッション情報破棄　==================================================");
 		
