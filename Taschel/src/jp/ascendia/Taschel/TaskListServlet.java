@@ -29,7 +29,7 @@ public class TaskListServlet extends BaseTaskServlet {
 	 * @throws IOException
 	 * @throws SQLException
 	 */
-	private void doGetTaskList(HttpServletRequest request, HttpServletResponse response, int user_id) throws ServletException, IOException, SQLException {
+	private void doGetTaskList(HttpServletRequest request, HttpServletResponse response, long user_id) throws ServletException, IOException, SQLException {
 		
 		System.out.println(String.format("[TaskListServlet][START] doGetTaskList(user_id: %d)", user_id));
 		HttpSession session = request.getSession();
@@ -58,7 +58,7 @@ public class TaskListServlet extends BaseTaskServlet {
 	 * @throws IOException
 	 * @throws SQLException
 	 */
-	private void doKeywordSearch(HttpServletRequest request, HttpServletResponse response, int user_id, String keyword) throws ServletException, IOException, SQLException {
+	private void doKeywordSearch(HttpServletRequest request, HttpServletResponse response, long user_id, String keyword) throws ServletException, IOException, SQLException {
 		
 		System.out.println(String.format("[TaskListServlet][START] doKeywordSearch(user_id: %d, keyword: %s)", user_id, keyword));
 		HttpSession session = request.getSession();		
@@ -72,7 +72,7 @@ public class TaskListServlet extends BaseTaskServlet {
 		
 		// ログインユーザのタスク一覧
 		try (PreparedStatement pstmt = this.getConection().prepareStatement(userTaskSql.toString() + " AND CONCAT(t.name, IFNULL(t.detail, '')) like ?")){
-			pstmt.setInt(1, user_id);
+			pstmt.setLong(1, user_id);
 			pstmt.setString(2, "%" + safeKeyword + "%");
 			System.out.println(pstmt.toString());
 			try (ResultSet rs = pstmt.executeQuery()){				
@@ -82,7 +82,7 @@ public class TaskListServlet extends BaseTaskServlet {
 		
 		// ログインユーザが依頼しているタスク一覧
 		try (PreparedStatement pstmt = this.getConection().prepareStatement(orgnizeTaskSql.toString() + " AND CONCAT(t.name, IFNULL(t.detail, '')) like ?")){
-			pstmt.setInt(1, user_id);
+			pstmt.setLong(1, user_id);
 			pstmt.setString(2, "%" + safeKeyword + "%");
 			System.out.println(pstmt.toString());
 			try (ResultSet rs = pstmt.executeQuery()){				
@@ -114,7 +114,7 @@ public class TaskListServlet extends BaseTaskServlet {
 		// NullPointerExceptionとなるので、getSession(true)に変更。これに伴い、下のif文も
 		// session == null から　session.isNew() に変更
 		HttpSession session = request.getSession(true);
-		Integer user_id = (Integer)session.getAttribute(USER_ID);
+		Long user_id = (Long)session.getAttribute(USER_ID);
 		
 		if ( session.isNew() || user_id == null) {
 			/* エラー処理 */

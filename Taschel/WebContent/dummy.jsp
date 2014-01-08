@@ -7,7 +7,7 @@
         
     if (session.isNew()) {
         response.sendRedirect("login.jsp");
-        return;        	        	
+        return;
     } else {
     	/* ログインしているユーザのデータを取得 */
     

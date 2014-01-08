@@ -1,20 +1,17 @@
 package jp.ascendia.Taschel;
 
 import java.io.IOException;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
+import java.util.Map;
 
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.sql.DataSource;
 
 /**
  * login.jspからPOSTメソッドで呼ばれ、ユーザからログインID（user_name）とパスワード（password）を受け取り
@@ -24,6 +21,8 @@ import javax.sql.DataSource;
  *
  */
 public class LoginServlet extends BaseServlet {
+	
+	private final String SELECT_USER ="SELECT id, first_name, last_name FROM m_user WHERE user_name = ? AND password = ?;";
 	
 	/**
 	 * 
@@ -35,60 +34,49 @@ public class LoginServlet extends BaseServlet {
 	 * @throws IOException
 	 */
 	private void doLogin(HttpServletRequest request, HttpServletResponse response, String loginID, String password) throws ServletException, IOException {
- 
-		// 連結を前提に文字列を作成するためのクラス（Stringで　+　を使って連結するよりも処理が速い）
-		StringBuilder sb = new StringBuilder("SELECT count(*), id, first_name, last_name")
-				.append(" FROM m_user")
-				.append(" WHERE user_name = ? AND password = ?;");
 
+		System.out.println(String.format("■ loginID: %s, password: %s", loginID, password));
+		
 		// ログイン認証
 		// SQLインジェクションの可能性がある箇所はPreparedStatementクラスを使います
-		try (PreparedStatement pstmt = this.getConection().prepareStatement(sb.toString())){
+		try (PreparedStatement pstmt = this.getConection().prepareStatement(SELECT_USER)){
 			pstmt.setString(1, loginID);
 			pstmt.setString(2, password);
 			
-			try (ResultSet rs = pstmt.executeQuery()){
-				int count = 0;
-				int user_id = 0;
-				String first_name = null;
-				String last_name = null;
+			List<Map<String, Object>> result = this.executeSelect(pstmt);
 				
-				// nextメソッドはカーソルを一つ進め、次の行が有効かどうかを返します
-				// 今回は、count()関数を使っているので、取得結果は必ず1件になります
-				// （マッチする結果が0件の場合は、0件という結果が1件返ってくる）
-				rs.next();
-				count = rs.getInt(1);
-				user_id = rs.getInt(2);
-				first_name = rs.getString(3);
-				last_name = rs.getString(4);
+			if ( result.size() == 0 ) {							
+				this.goBackLogin(request, response, LOGIN_ERROR);				
+			} else {
+				Long user_id = (Long) result.get(0).get("id");
+				String first_name = (String) result.get(0).get("first_name");
+				String last_name = (String) result.get(0).get("last_name");
+				System.out.println(String.format("user_id:%d, name: %s %s", user_id, last_name, first_name));
+				// ユーザ情報をセッションに保存
+				HttpSession session = request.getSession(true);
+				session.setAttribute(USER_ID, user_id);						
+				session.setAttribute(FIRST_NAME, first_name);
+				session.setAttribute(LAST_NAME, last_name);
 				
-				if ( count == 0) {
-					this.goBackLogin(request, response, LOGIN_ERROR);
+				String sql = "SELECT g.name FROM m_group g, k_syozoku s WHERE g.id = s.group_id AND s.user_id = ?;";
+				
+				try (PreparedStatement pstmt2 = this.getConection().prepareStatement(sql)){
+					pstmt2.setLong(1, user_id);
 					
-				} else {					
-					String sql = String.format("SELECT g.name FROM m_group g, k_syozoku s WHERE g.id = s.group_id AND s.user_id = %d;", user_id);
+					List<Map<String, Object>> result2 = this.executeSelect(pstmt2);
 					
-					// SQLインジェクションの可能性がないので、通常のStatementクラスを使います
-					try (	Statement stmt = this.getConection().createStatement(); 
-							ResultSet rs2 = stmt.executeQuery(sql)) {
-						
-						String group_name = null;
-						// 読み込み処理
-						while (rs2.next()) {
-							group_name = rs2.getString(1);
-						}
-						
-						HttpSession session = request.getSession(true);
-						session.setAttribute(USER_ID, user_id);						
-						session.setAttribute(FIRST_NAME, first_name);
-						session.setAttribute(LAST_NAME, last_name);
-						session.setAttribute(GROUP_NAME, group_name);						
-						// 次の処理へ
-						//this.getServletContext().getRequestDispatcher("/dummy.jsp").forward(request, response);
-						// _TODO: 遷移先を修正する
-						this.getServletContext().getRequestDispatcher("/TaskList").forward(request, response);
+					if ( result2.size() != 0) {
+						String group_name = (String) result.get(0).get("group_name");
+						// グループ情報をセッションに保存
+						session.setAttribute(GROUP_NAME, group_name);
 					}
-				}
+					
+					// 次の処理へ
+					//this.getServletContext().getRequestDispatcher("/dummy.jsp").forward(request, response);
+					// _TODO: 遷移先を修正する
+					this.getServletContext().getRequestDispatcher("/TaskList").forward(request, response);
+					
+				}			
 			}			
 		} catch (SQLException e) {
 			this.goBackLogin(request, response, SYSTEM_ERROR);
@@ -107,6 +95,17 @@ public class LoginServlet extends BaseServlet {
 	@Override
 	protected void execute(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		System.out.println("[LoginServlet][START] execute");
+		
+		HttpSession session = request.getSession(true);
+		Long user_id = (Long)session.getAttribute(USER_ID);
+		
+		/* セッション情報確認 */		
+		if ( session.isNew() || user_id == null) {
+			System.out.println("セッションはありません");			
+		} else {
+			System.out.println(String.format("セッションがあります（user_id: %d）。セッションを破棄します...", user_id));
+			session.invalidate();
+		}
 
 		// login.jspから送られてきたデータを取得
 		String loginID = request.getParameter("loginID");

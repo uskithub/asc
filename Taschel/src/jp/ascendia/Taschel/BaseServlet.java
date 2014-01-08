@@ -2,6 +2,7 @@ package jp.ascendia.Taschel;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -26,7 +27,7 @@ public abstract class BaseServlet extends HttpServlet implements TaschelConstant
 
 	@Override
 	public void init() {
-		System.out.println("[START] init");
+		System.out.println("[START] init ");
 		try {
 			// InitialContextは、SQL検索をするときの出発点
 			InitialContext context = new InitialContext();
@@ -123,6 +124,18 @@ public abstract class BaseServlet extends HttpServlet implements TaschelConstant
 			list.add(m);
 		}
 		return list;
+	}
+	
+	/**
+	 * 
+	 * @param pstmt 実行するSELECT文が設定されたPreparedStatement
+	 * @return　一レコードを表すMapを要素とするListを返します。
+	 * @throws SQLException
+	 */
+	protected List<Map<String, Object>> executeSelect(PreparedStatement pstmt) throws SQLException {
+		try (ResultSet rs = pstmt.executeQuery()){
+			return convertResultSet2List(rs);
+		}
 	}
 	
 	@Override

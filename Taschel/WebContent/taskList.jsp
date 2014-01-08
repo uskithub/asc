@@ -10,16 +10,16 @@
 <%-- メンバ変数としての変数の宣言、メソッドの定義は　<%! ... %>内で行います --%>
 <%!
     // ユーザIDとユーザ名のマップ用
-    Map<Integer, String> userIdNameMap = new HashMap<Integer, String>();
+    Map<Long, String> userIdNameMap = new HashMap<Long, String>();
 %>
 <%
-    Integer user_id = null;
+    Long user_id = null;
     String first_name = null;
     String last_name = null;
     String group_name = null;
     
     // 選択したユーザのID
-    Integer target_user_id = null;
+    Long target_user_id = null;
     
     if (session.isNew()) {
         response.sendRedirect("login.jsp");
@@ -29,13 +29,13 @@
 
         // intはプリミティブ型なので、クラス型であるObjectから直接キャスト（型変換）できません
         // Objectからクラス型のintのラッパーIntegerにキャストします
-        user_id = (Integer)session.getAttribute(TaschelConstant.USER_ID);
+        user_id = (Long)session.getAttribute(TaschelConstant.USER_ID);
         first_name = (String)session.getAttribute(TaschelConstant.FIRST_NAME);
         last_name = (String)session.getAttribute(TaschelConstant.LAST_NAME);
         group_name = (String)session.getAttribute(TaschelConstant.GROUP_NAME);     
         
         if ( request.getParameter(TaschelConstant.TARGET_USER_ID) != null ) {
-            target_user_id = Integer.parseInt(request.getParameter(TaschelConstant.TARGET_USER_ID));
+            target_user_id = Long.parseLong(request.getParameter(TaschelConstant.TARGET_USER_ID));
         }
     }
 %>
@@ -59,13 +59,13 @@
 	            <%
 	                List<Map<String, Object>> userList = (List<Map<String, Object>>) session.getAttribute(TaschelConstant.USER_LIST);    
 	            
-	                Integer selectedId = user_id;
+	                Long selectedId = user_id;
 	                if ( target_user_id != null ) {
 	                    selectedId = target_user_id;
 	                }
 	                
 	                for(Map<String, Object> m : userList) {
-	                    int id = ((Long) m.get("id")).intValue();
+	                    Long id = (Long) m.get("id");
 	                    String name = String.format("%s %s", m.get("last_name"), m.get("first_name"));
 	                    userIdNameMap.put(id, name);
 	                    if ( selectedId == id ) {

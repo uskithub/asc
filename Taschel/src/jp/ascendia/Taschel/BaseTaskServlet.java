@@ -43,9 +43,9 @@ public abstract class BaseTaskServlet extends BaseServlet {
 	 * @return
 	 * @throws SQLException
 	 */
-	protected List<Map<String, Object>> getUserTaskList(int user_id) throws SQLException {
+	protected List<Map<String, Object>> getUserTaskList(long user_id) throws SQLException {
 		try (PreparedStatement pstmt = this.getConection().prepareStatement(userTaskSql.toString())){
-			pstmt.setInt(1, user_id);
+			pstmt.setLong(1, user_id);
 			System.out.println(pstmt.toString());
 			try (ResultSet rs = pstmt.executeQuery()){				
 				return this.convertResultSet2List(rs);
@@ -61,9 +61,9 @@ public abstract class BaseTaskServlet extends BaseServlet {
 	 * @return
 	 * @throws SQLException
 	 */
-	protected List<Map<String, Object>> getOrgnizeTaskList(int user_id) throws SQLException {
+	protected List<Map<String, Object>> getOrgnizeTaskList(long user_id) throws SQLException {
 		try (PreparedStatement pstmt = this.getConection().prepareStatement(orgnizeTaskSql.toString())){
-			pstmt.setInt(1, user_id);
+			pstmt.setLong(1, user_id);
 			System.out.println(pstmt.toString());
 			try (ResultSet rs = pstmt.executeQuery()){				
 				return this.convertResultSet2List(rs);
